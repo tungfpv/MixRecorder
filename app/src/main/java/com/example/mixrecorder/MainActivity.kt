@@ -2,13 +2,16 @@ package com.example.mixrecorder
 
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
@@ -16,8 +19,9 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var projectionManager: MediaProjectionManager
-    private var mediaProjection: MediaProjection? = null
     private var recorder: MixRecorder? = null
+    private lateinit var btnStart : Button;
+    private lateinit var btnStop : Button;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,14 +30,19 @@ class MainActivity : AppCompatActivity() {
         projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
 
-        findViewById<Button>(R.id.btnStart).setOnClickListener {
+        btnStart = findViewById<Button>(R.id.btnStart)
+        btnStop = findViewById<Button>(R.id.btnStop)
+        btnStart.isEnabled = true
+        btnStop.isEnabled = false
+
+        btnStart.setOnClickListener {
             startActivityForResult(
                 projectionManager.createScreenCaptureIntent(),
                 1001
             )
         }
 
-        findViewById<Button>(R.id.btnStop).setOnClickListener {
+        btnStop.setOnClickListener {
             recorder?.stop()
             val stopIntent = Intent(this, RecordService::class.java)
             stopIntent.action = RecordService.ACTION_STOP
@@ -60,6 +69,52 @@ class MainActivity : AppCompatActivity() {
                 startService(i)
             }
         }
+    }
+
+    private val recordReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+
+                RecordService.ACTION_STARTED -> {
+                    btnStart.isEnabled = false
+                    btnStop.isEnabled = true
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Start recording",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                RecordService.ACTION_STOPPED -> {
+                    btnStart.isEnabled = true
+                    btnStop.isEnabled = false
+                    val path = intent.getStringExtra(RecordService.EXTRA_FILE)
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Saved: $path",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onStart() {
+        super.onStart()
+        registerReceiver(
+            recordReceiver,
+            IntentFilter().apply {
+                addAction(RecordService.ACTION_STARTED)
+                addAction(RecordService.ACTION_STOPPED)
+            },
+            RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(recordReceiver)
     }
 
 

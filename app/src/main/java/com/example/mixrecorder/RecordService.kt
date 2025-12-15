@@ -18,6 +18,10 @@ class RecordService : Service() {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val CHANNEL_ID = "mix_record_channel"
+
+        const val ACTION_STARTED = "com.example.mixrecorder.STARTED"
+        const val ACTION_STOPPED = "com.example.mixrecorder.STOPPED"
+        const val EXTRA_FILE = "file"
     }
 
     private var recorder: MixRecorder? = null
@@ -45,6 +49,7 @@ class RecordService : Service() {
                     val projection = pm.getMediaProjection(resultCode, data)
                     recorder = projection?.let { MixRecorder(this, it) }
                     recorder!!.start()
+                    notifyStarted()
                 }
             }
 
@@ -52,6 +57,7 @@ class RecordService : Service() {
                 recorder?.stop()
                 stopForeground(true)
                 stopSelf()
+                recorder?.let { notifyStopped(it.fileName) }
             }
         }
         return START_STICKY
@@ -82,4 +88,23 @@ class RecordService : Service() {
                 .createNotificationChannel(channel)
         }
     }
+    private fun notifyStarted() {
+        sendBroadcast(
+            Intent(ACTION_STARTED).apply {
+                setPackage(packageName) // 🔐 chỉ app này nhận
+            }
+        )
+    }
+
+    private fun notifyStopped(path: String) {
+        sendBroadcast(
+            Intent(ACTION_STOPPED).apply {
+                setPackage(packageName)
+                putExtra(EXTRA_FILE, path)
+            }
+        )
+    }
+
+
+
 }

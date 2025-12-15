@@ -30,7 +30,7 @@ class MixRecorder(
     private val channelCount = 1
     private val bitrate = 128_000
 
-    val PLAY_VOLUME = 0.2f
+    val PLAY_VOLUME = 0.5f
     val MIC_VOLUME = 2.0f
 
     private lateinit var micRecord: AudioRecord
@@ -45,6 +45,7 @@ class MixRecorder(
     private var presentationTimeUs = 0L
     private lateinit var outputUri: Uri
     private lateinit var outputResolver: ContentResolver
+    var fileName = ""
 
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
@@ -123,6 +124,7 @@ class MixRecorder(
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         codec.start()
 
+        fileName = "mix_${System.currentTimeMillis()}.m4a"
         val (uri, resolver) =
             MediaStoreOutput.createM4aFile(
                 context,
