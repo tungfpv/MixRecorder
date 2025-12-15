@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -23,12 +24,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnStart : Button;
     private lateinit var btnStop : Button;
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         projectionManager =
             getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+        val config = MediaProjectionConfig.createConfigForDefaultDisplay()
 
         btnStart = findViewById<Button>(R.id.btnStart)
         btnStop = findViewById<Button>(R.id.btnStop)
@@ -37,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
         btnStart.setOnClickListener {
             startActivityForResult(
-                projectionManager.createScreenCaptureIntent(),
+                projectionManager.createScreenCaptureIntent(config),
                 1001
             )
         }
